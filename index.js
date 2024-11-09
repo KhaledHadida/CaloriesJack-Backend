@@ -37,6 +37,7 @@ myApp.use(cors({
     credentials: true
 }));
 
+console.log('CORS URL:', process.env.URL);
 
 async function fetchPlayerItems(playersFinalItems, foodBank) {
     //new empty JSON obj for calories sum for each player
