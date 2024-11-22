@@ -37,8 +37,6 @@ myApp.use(cors({
     credentials: true
 }));
 
-console.log('CORS URL:', process.env.URL);
-
 async function fetchPlayerItems(playersFinalItems, foodBank) {
     //new empty JSON obj for calories sum for each player
     const playerCalories = {}
@@ -194,7 +192,7 @@ myApp.post('/createGame', async (req, res) => {
 
     } catch (error) {
         console.error("Error creating game session: ", error.message);
-        res.status(500).json({ error: "Failed to create game session.\n" + error.message});
+        res.status(500).json({ error: "Failed to create game session.\n" + error.message });
     }
 });
 
@@ -496,6 +494,70 @@ myApp.post('/leaveGame', async (req, res) => {
     res.status(200).json({ message: "Player removed successfully." });
 
 });
+
+
+//Rematch - Only leaders can rematch
+myApp.post('/rematch', verifyLeaderSession, async (req, res) => {
+
+    try {
+        //Game ID & Name 
+        const { gameId } = req.body;
+
+        //Validate 
+        if (gameId === "") {
+            return res.status(400).json({ error: "Game ID and Name are required." });
+        }
+
+        if (!/^\d{4}$/.test(gameId)) {
+            return res.status(400).json({ error: "Game Id should be exactly 4 digits." });
+        }
+
+        //Fetch random food items Default is 36.
+        const { data: foods, error: foodsError } = await supabase
+            .from(foodTable)
+            .select("*")
+            .limit(36);
+
+        if (foodsError) {
+            console.error("Supabase food error:", foodsError);
+            throw error;
+        }
+
+        //Here is what we need to reset
+        //food_items regen, selected_items cleared, game_status set to WAITING, winner reset to NULL, rematch_counter +1
+        //Update the variables..
+        const { error: updateError } = await supabase
+            .from("game_sessions")
+            .update({ selected_items: {}, food_items: foods, game_status: "WAITING", winner: null })
+            .eq("game_id", gameId);
+
+        if (updateError) throw updateError;
+
+        const { error: rpcError } = await supabase
+            .rpc('increment_rematch_counter', { game_id: gameId });
+
+
+        //Once all is updated, lets select it so that the host gets copy of the new data
+        //Non-leader/host players dont need this, as they recieve live updates instead
+
+        //  Retrieve the data
+        const { data: newData, error: newDataError } = await supabase
+            .from("game_sessions")
+            .select("selected_items, food_items, game_status, winner, rematch_counter")
+            .eq("game_id", gameId)
+            .single();
+
+        res.status(200).json({
+            message: "Game successfully restarted!",
+            gameSession: newData,
+        });
+
+    } catch (error) {
+        console.error("Error restarting game session: ", error.message);
+        res.status(500).json({ error: "Failed to restart game session" });
+    }
+});
+
 
 
 
