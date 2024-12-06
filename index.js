@@ -18,6 +18,9 @@ var myApp = express();
 //Cookies
 myApp.use(cookieParser());
 
+// Set the trust proxy setting - this should fix the iOS issue of not being able to set cookies..
+myApp.set('trust proxy', 1); 
+
 // Initialize Supabase client with your URL and API key
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -34,7 +37,8 @@ myApp.use(express.json());
 myApp.use(cors({
     origin: process.env.URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 async function fetchPlayerItems(playersFinalItems, foodBank) {
@@ -173,7 +177,7 @@ myApp.post('/createGame', async (req, res) => {
         );
 
         // Set the token as a secure HTTP-only cookie
-        res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None' });
+        res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 2 * 60 * 60 * 1000 });
 
 
         //Is data returned properly? - Can happen because of RLS (This is optional)
@@ -418,10 +422,17 @@ myApp.post('/submitScore', async (req, res) => {
         console.log(updatedData[0].players.length);
 
         if (Object.keys(updatedData[0].selected_items).length >= updatedData[0].players.length) {
-            //EVeryone submitted!
+            //EVeryone has submitted!
             //fetch everyone's items and calculate the total calories.
-            // const item = foodItems.find(food => food.name === foodName);
             const playersFinalItems = updatedData[0].selected_items;
+            //Our chance to save to "original_players" for record keeping as players will be changed.
+            const { error: OGPlayersError } = await supabase
+                .from("game_sessions")
+                .update({ original_players: updatedData[0].players })
+                .eq("game_id", game_id)
+                .select();
+
+            if (OGPlayersError) throw OGPlayersError;
 
             //new
             const playersFinalCalories = await fetchPlayerItems(playersFinalItems, updatedData[0].food_items);
