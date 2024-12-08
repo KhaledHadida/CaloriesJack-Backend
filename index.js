@@ -176,8 +176,8 @@ myApp.post('/createGame', async (req, res) => {
             { expiresIn: '2h' }
         );
 
-        // Set the token as a secure HTTP-only cookie
-        res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 2 * 60 * 60 * 1000 });
+        //OLD - Set the token as a secure HTTP-only cookie
+        // res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 2 * 60 * 60 * 1000 });
 
 
         //Is data returned properly? - Can happen because of RLS (This is optional)
@@ -191,7 +191,8 @@ myApp.post('/createGame', async (req, res) => {
             //Return data
             gameSession: data[0],
             //include generated player ID 
-            leaderID
+            leaderID,
+            token
         });
 
     } catch (error) {
