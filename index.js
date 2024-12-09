@@ -19,7 +19,7 @@ var myApp = express();
 myApp.use(cookieParser());
 
 // Set the trust proxy setting - this should fix the iOS issue of not being able to set cookies..
-myApp.set('trust proxy', 1); 
+myApp.set('trust proxy', 1);
 
 // Initialize Supabase client with your URL and API key
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -66,35 +66,10 @@ async function fetchPlayerItems(playersFinalItems, foodBank) {
                 }
             }
 
-            // //Are they cheating ? (9999 reference to undertale)
-            // if (isNaN(currentItemCalories) && foodItem !== 'X') {
-            //     accumulatedCalories -= 9999;
-            // } else {
-            //     accumulatedCalories += currentItemCalories;
-            // }
-
         }
 
         //set it
         playerCalories[key] = accumulatedCalories;
-
-
-        //OLD
-        // const { data, error } = await supabase
-        //     .from('food_data')
-        //     .select('name, calories')
-        //     .in('name', playersFinalItems[key]);
-
-        // if (error) {
-        //     console.error("Error fetching food items", key, error);
-        // } else {
-        //     //Means we have the calories.. now just add them all!
-        //     console.log("Food items for player", key, data);
-        //     const totalCalories = data.reduce((sum, item) => sum + item.calories, 0);
-        //     //Put it into the JSON - Altho here we are using player ID, but later on we may need to use player name,
-        //     //players rather read their name than an abritrary ID.
-        //     playerCalories[key] = totalCalories;
-        // }
     }
 
     //Return once all players' calories are summed.
@@ -176,9 +151,7 @@ myApp.post('/createGame', async (req, res) => {
             { expiresIn: '2h' }
         );
 
-        //OLD - Set the token as a secure HTTP-only cookie
-        // res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 2 * 60 * 60 * 1000 });
-
+        res.cookie('leaderSession', token, { httpOnly: true, secure: true, sameSite: 'None', maxAge: 2 * 60 * 60 * 1000 });
 
         //Is data returned properly? - Can happen because of RLS (This is optional)
         if (!data || data.length === 0) {
@@ -407,16 +380,6 @@ myApp.post('/submitScore', async (req, res) => {
 
         if (updatedError) throw error;
 
-        //Force a fetch again (Honestly unsure why I could not use 'existingGame') - I have to analyze this further.. 
-        //I do not want to call the backend more times than I should..
-        // const { data: refreshedGame, error: refetchError } = await supabase
-        //     .from("game_sessions")
-        //     .select("selected_items, players, food_items, winner")
-        //     .eq("game_id", game_id)
-        //     .single();
-
-        // if (refetchError) throw refetchError;
-
         //If selected_items == # of players then the game is FINISHED!
         //Could add layer of security to see if player ids from selected items == player ids from players (maybe?)
         console.log(updatedData);
@@ -569,9 +532,6 @@ myApp.post('/rematch', verifyLeaderSession, async (req, res) => {
         res.status(500).json({ error: "Failed to restart game session" });
     }
 });
-
-
-
 
 
 //BELOW IS A TEST & CAN BE REMOVED

@@ -4,11 +4,11 @@ const secret = process.env.JWT_SECRET;
 //Midleware to verify if user is leader of game session or not
 const verifyLeaderSession = (req, res, next) => {
 
-    //Grab the token from cookies
-    const token = req.cookies.leaderSession;
+    //Grab the token from cookies - NEW: adding leaderSession as param in body
+    const token = req.cookies.leaderSession || req.body.leaderSession ;
 
     //No token?
-    console.log(req.cookies);
+    console.log(token);
 
     if (!token) {
         return res.status(401).json({ error: "Unauthorized: No token provided" });
