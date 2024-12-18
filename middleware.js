@@ -6,10 +6,7 @@ const verifyLeaderSession = (req, res, next) => {
 
     //Grab the token from cookies - NEW: adding leaderSession as param in body
     const token = req.cookies.leaderSession || req.body.leaderSession ;
-
-    //No token?
-    console.log(token);
-
+    
     if (!token) {
         return res.status(401).json({ error: "Unauthorized: No token provided" });
     }

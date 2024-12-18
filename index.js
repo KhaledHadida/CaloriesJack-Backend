@@ -9,11 +9,13 @@ const jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
 const cors = require('cors');
 
-
 //middleauth imported
 const { verifyLeaderSession } = require('./middleware');
 
 var myApp = express();
+
+//Import food items
+const FoodItems = require('./FoodItems');
 
 //Cookies
 myApp.use(cookieParser());
@@ -383,7 +385,6 @@ myApp.post('/submitScore', async (req, res) => {
         //If selected_items == # of players then the game is FINISHED!
         //Could add layer of security to see if player ids from selected items == player ids from players (maybe?)
         console.log(updatedData);
-        console.log(updatedData[0].players.length);
 
         if (Object.keys(updatedData[0].selected_items).length >= updatedData[0].players.length) {
             //EVeryone has submitted!
@@ -400,7 +401,7 @@ myApp.post('/submitScore', async (req, res) => {
 
             //new
             const playersFinalCalories = await fetchPlayerItems(playersFinalItems, updatedData[0].food_items);
-            console.log("here?");
+            console.log("Final Results for Users..");
             console.log(playersFinalCalories);
             //Now submit it to Winner column
             const { data, error } = await supabase
@@ -436,9 +437,6 @@ myApp.post('/submitScore', async (req, res) => {
 myApp.post('/leaveGame', async (req, res) => {
     const { game_id, player } = req.body;
 
-    console.log(game_id);
-    console.log(player);
-
     //Logic to remove it - Retrieve through SELECT, Omit the player out of list, UPDATE the players list to Supabase DB
     const { data: existingGame, error: fetchError } = await supabase
         .from('game_sessions')
@@ -449,7 +447,6 @@ myApp.post('/leaveGame', async (req, res) => {
 
     //This validation may not be necessary but nonetheless enforce it for better security
     if (fetchError || !existingGame) return res.status(404).json({ error: "Game not found." });
-    console.log(existingGame.players);
 
     //Update - filter out the player basically.
     const updatedPlayers = existingGame.players.filter(currentPlayer => currentPlayer.player_id !== player.player_id);
